@@ -1,0 +1,27 @@
+# Ortam / gizli bilgiler
+.env
+firmware/*/include/secrets.h
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.ipynb_checkpoints/
+
+# Node
+node_modules/
+dist/
+
+# PlatformIO
+.pio/
+.vscode/.browse*
+.vscode/ipch
+
+# ML çıktıları (büyük veri dosyaları repoya girmez)
+ml/data/*.csv
+ml/models/
+!ml/data/.gitkeep
+
+# İşletim sistemi
+.DS_Store
+Thumbs.db

@@ -1,0 +1,22 @@
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #f4f7f2;
+  color: #1d2b1f;
+}
+main { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+h1 { color: #2e6b34; margin-bottom: 0.3rem; }
+.dugmeler { display: flex; gap: 0.5rem; }
+button {
+  background: #2e6b34; color: white; border: 0; border-radius: 6px;
+  padding: 0.5rem 0.9rem; cursor: pointer;
+}
+button:hover { background: #245428; }
+.hata { color: #b00020; }
+.kartlar { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+.kart { background: white; border-radius: 10px; padding: 1rem; box-shadow: 0 1px 4px rgb(0 0 0 / 0.1); }
+.kart img, .foto-yok { width: 100%; height: 180px; object-fit: cover; border-radius: 6px; background: #e3e8e0; }
+.foto-yok { display: grid; place-items: center; color: #777; }
+.kart p { margin: 0.35rem 0; }
+table { width: 100%; border-collapse: collapse; background: white; }
+th, td { padding: 0.4rem 0.6rem; border-bottom: 1px solid #e3e8e0; text-align: left; }

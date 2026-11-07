@@ -1,0 +1,94 @@
+# Akıllı Sulama Sistemi - geliştirme ortamı
+# Hepsini başlat:   docker compose up -d --build
+# Durdur:           docker compose down
+# Simülatörle:      docker compose --profile sim up -d --build
+# ML (Jupyter):     docker compose --profile ml up -d --build
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: sulama-db
+    restart: unless-stopped
+    env_file: .env
+    # Port dışarı açılmaz; veritabanına erişim:  docker compose exec db psql -U sulama
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mqtt:
+    image: eclipse-mosquitto:2
+    container_name: sulama-mqtt
+    restart: unless-stopped
+    ports:
+      - "${MQTT_PORT_DIS:-1883}:1883"   # ESP32 buraya bağlanır
+      - "9001:9001"   # WebSocket
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - mqtt-data:/mosquitto/data
+
+  backend:
+    build: ./backend
+    container_name: sulama-backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      MQTT_HOST: mqtt
+      MQTT_PORT: 1883
+      IMAGE_DIR: /data/images
+      WATCHFILES_FORCE_POLLING: "true"   # Windows'ta kod değişikliğini algılamak için
+    ports:
+      - "${BACKEND_PORT_DIS:-8000}:8000"   # API + ESP32-CAM fotoğraf yükleme
+    volumes:
+      - ./backend/app:/code/app      # kodu değiştirince sunucu kendiliğinden yeniden başlar
+      - images:/data/images
+    depends_on:
+      db:
+        condition: service_healthy
+      mqtt:
+        condition: service_started
+
+  frontend:
+    build: ./frontend
+    container_name: sulama-frontend
+    restart: unless-stopped
+    environment:
+      VITE_API_HEDEF: http://backend:8000
+    ports:
+      - "${WEB_PORT_DIS:-5173}:5173"   # Web arayüzü: http://localhost:5173
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules             # node_modules konteynerin içinde kalır
+    depends_on:
+      - backend
+
+  simulator:
+    build: ./simulator
+    container_name: sulama-simulator
+    profiles: ["sim"]                 # sadece --profile sim ile çalışır
+    environment:
+      MQTT_HOST: mqtt
+      ARALIK_SN: 5
+    depends_on:
+      - mqtt
+
+  ml:
+    build: ./ml
+    container_name: sulama-ml
+    profiles: ["ml"]                  # sadece --profile ml ile çalışır
+    environment:
+      API_URL: http://backend:8000
+    ports:
+      - "${JUPYTER_PORT_DIS:-8888}:8888"   # Jupyter Lab: http://localhost:8888
+    volumes:
+      - ./ml:/work
+      - ./firmware/esp32-controller/include:/firmware_include   # model.h buraya yazılır
+
+volumes:
+  db-data:
+  mqtt-data:
+  images:
